@@ -44,6 +44,21 @@ describe UsersController do
         end
       end
 
+      it "should have delete links for the admins" do
+        @user.toggle!(:admin)
+        user2 = User.all.second
+        get :index
+        response.should have_selector('a', :href => user_path(user2),
+                                           :content => "delete")
+      end
+
+      it "should not have delete links for non-admins" do
+        user2 = User.all.second
+        get :index
+        response.should_not have_selector('a', :href => user_path(user2),
+                                               :content => "delete")
+      end
+
       it "should paginate users" do
         get :index
         response.should have_selector("div.pagination")
@@ -308,14 +323,20 @@ describe UsersController do
     describe "as an admin user" do
 
       before(:each) do
-        admin = Factory(:user, :email => "admin@example.com", :admin => true)
-        test_sign_in(admin)
+        @admin = Factory(:user, :email => "admin@example.com", :admin => true)
+        test_sign_in(@admin)
       end
 
       it "should destroy the user" do
         lambda do
           delete :destroy, :id => @user
         end.should change(User, :count).by(-1)
+      end
+
+      it "should not be able to destroy itself" do
+        lambda do
+          delete :destroy, :id => @admin
+        end.should_not change(User, :count)
       end
 
       it "should redirect to the users page" do
